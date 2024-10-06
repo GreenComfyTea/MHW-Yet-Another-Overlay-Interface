@@ -1,9 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
+    <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <SignAssembly>False</SignAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,12 +25,16 @@
   <ItemGroup>
     <Folder Include="data\configs\" />
     <Folder Include="data\localizations\" />
+    <Folder Include="data\fonts\" />
     <Folder Include="source\Core\" />
     <Folder Include="source\Frontend\Overlay\Components\" />
     <Folder Include="source\Frontend\Overlay\Widgets\" />
     <Folder Include="source\Frontend\ImGui\" />
     <Folder Include="source\Frontend\Overlay\" />
-    <Folder Include="source\Infrastructure\ConfigManager\Watchers\" />
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy &quot;$(OutDir)&quot; &quot;D:\Programs\Steam\steamapps\common\Monster Hunter World\nativePC\plugins\CSharp\YetAnotherOverlayInterface&quot; /s /i /y" />
+  </Target>
 
 </Project>
