@@ -10,6 +10,8 @@ internal class CurrentConfigWatcher
 {
 	private FileSystemWatcher Watcher { get; }
 
+	private bool IsDisabled { get; set; } = false;
+
 	public CurrentConfigWatcher()
 	{
 		LogManager.Instance.Info("CurrentConfigChangeWatcher: Initializing...");
@@ -32,11 +34,29 @@ internal class CurrentConfigWatcher
 		Watcher.Filter = $"{Constants.DEFAULT_CONFIG}.json";
 		Watcher.EnableRaisingEvents = true;
 
-		LogManager.Instance.Info("CurrentConfigChangeWatcher: Initialization Done!");
+		LogManager.Instance.Info("CurrentConfigChangeWatcher: Initialized!");
+	}
+
+	public void Enable()
+	{
+		IsDisabled = false;
+		LogManager.Instance.Info("CurrentConfigChangeWatcher: Enabled.");
+	}
+
+	public void Disable()
+	{
+		IsDisabled = true;
+		LogManager.Instance.Info("CurrentConfigChangeWatcher: Disabled.");
 	}
 
 	private void OnCurrentConfigFileChanged(object sender, FileSystemEventArgs e)
 	{
+		if(IsDisabled)
+		{
+			LogManager.Instance.Info($"CurrentConfigChangeWatcher: File: {e.FullPath} {e.ChangeType} (Skipped)");
+			return;
+		}
+
 		LogManager.Instance.Info($"CurrentConfigChangeWatcher: File: {e.FullPath} {e.ChangeType}");
 
 		ConfigManager.Instance.LoadCurrentConfig();
@@ -44,6 +64,12 @@ internal class CurrentConfigWatcher
 
 	private void OnCurrentConfigFileCreated(object sender, FileSystemEventArgs e)
 	{
+		if(IsDisabled)
+		{
+			LogManager.Instance.Info($"CurrentConfigChangeWatcher: File: {e.FullPath} {e.ChangeType} (Skipped)");
+			return;
+		}
+
 		LogManager.Instance.Info($"CurrentConfigChangeWatcher: File: {e.FullPath} {e.ChangeType}");
 
 		ConfigManager.Instance.LoadCurrentConfig();
@@ -51,6 +77,12 @@ internal class CurrentConfigWatcher
 
 	private void OnCurrentConfigFileDeleted(object sender, FileSystemEventArgs e)
 	{
+		if(IsDisabled)
+		{
+			LogManager.Instance.Info($"CurrentConfigChangeWatcher: File: {e.FullPath} {e.ChangeType} (Skipped)");
+			return;
+		}
+
 		LogManager.Instance.Info($"CurrentConfigChangeWatcher: File: {e.FullPath} {e.ChangeType}");
 
 		ConfigManager.Instance.SaveCurrentConfig();
@@ -58,6 +90,12 @@ internal class CurrentConfigWatcher
 
 	private void OnCurrentConfigFileRenamed(object sender, RenamedEventArgs e)
 	{
+		if(IsDisabled)
+		{
+			LogManager.Instance.Info($"CurrentConfigChangeWatcher: File: {e.OldFullPath} renamed to {e.FullPath} (Skipped)");
+			return;
+		}
+
 		LogManager.Instance.Info($"CurrentConfigChangeWatcher: File: {e.OldFullPath} renamed to {e.FullPath}");
 
 		ConfigManager.Instance.SaveCurrentConfig();
@@ -65,6 +103,10 @@ internal class CurrentConfigWatcher
 	
 	private void OnCurrentConfigFileError(object sender, ErrorEventArgs e)
 	{
+		if (IsDisabled) {
+			LogManager.Instance.Info($"CurrentConfigChangeWatcher: Error - {e.GetException()} (Skipped)");
+			return;
+		}
 		LogManager.Instance.Error($"CurrentConfigChangeWatcher: Error - {e.GetException()}");
 
 		ConfigManager.Instance.SaveCurrentConfig();

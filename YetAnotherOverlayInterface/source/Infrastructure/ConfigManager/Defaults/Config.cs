@@ -17,28 +17,30 @@ internal class Config
 
 	public void Save()
 	{
-		LogManager.Instance.Info($"{Name} Config: Saving...");
+		LogManager.Instance.Info($"Config \"{Name}\": Saving...");
 
-		JsonManager.SearializeToFile($"{Constants.CONFIGS_PATH}\\${Name}.json", this);
+		JsonManager.SearializeToFile($"{Constants.CONFIGS_PATH}\\{Name}.json", this);
 
-		LogManager.Instance.Info($"{Name} Config: Saving Done!");
+		LogManager.Instance.Info($"Config \"{Name}\": Saved!");
 	}
 
 	public static Config Load(string name)
 	{
-		LogManager.Instance.Info($"{name} Config: Loading...");
+		LogManager.Instance.Info($"Config \"{name}\": Loading...");
 
-		Config config = JsonManager.ReadFromFile<Config>($"{Constants.CONFIGS_PATH}\\${name}.json");
+		Config config = JsonManager.ReadFromFile<Config>($"{Constants.CONFIGS_PATH}\\{name}.json");
 
 		if(config == null)
 		{
-			LogManager.Instance.Info($"{name} Config: Loading Failed!");
+			LogManager.Instance.Info($"Config \"{name}\": Loading Failed!");
 			return null;
 		}
 
 		config.Name = name;
-		config.Save();
 
+		LogManager.Instance.Info($"Config \"{name}\": Loaded!");
+
+		config.Save();
 		return config;
 	}
 }

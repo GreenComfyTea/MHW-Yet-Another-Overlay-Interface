@@ -4,6 +4,16 @@ namespace YetAnotherOverlayInterface;
 
 public class YetAnotherOverlayInterfacePlugin: IPlugin
 {
-	public string Name => "Yet Another Overlay Interface";
-	public string Author => "GreenComfyTea";
+	public string Name => $"{Constants.MOD_NAME} v{Constants.VERSION}";
+	public string Author => $"{Constants.MOD_AUTHOR}";
+
+	public PluginData Initialize()
+	{
+		return new PluginData();
+	}
+
+	public void OnLoad()
+	{
+		ConfigManager configManager = ConfigManager.Instance;
+	}
 }

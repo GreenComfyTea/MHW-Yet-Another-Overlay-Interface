@@ -34,7 +34,7 @@ internal class CurrentConfig
 
 		JsonManager.SearializeToFile(Constants.CURRENT_CONFIG_FILE_PATH_NAME, this);
 
-		LogManager.Instance.Info("CurrentConfig: Saving Done!");
+		LogManager.Instance.Info("CurrentConfig: Saved!");
 	}
 
 	public static CurrentConfig Load()
@@ -49,6 +49,7 @@ internal class CurrentConfig
 			return null;
 		}
 
+		LogManager.Instance.Info("CurrentConfig: Loaded!");
 		return currentConfig;
 	}
 }
