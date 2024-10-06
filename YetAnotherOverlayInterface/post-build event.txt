@@ -1,0 +1,1 @@
+xcopy "$(OutDir)" "D:\Programs\Steam\steamapps\common\Monster Hunter World\nativePC\plugins\CSharp\YetAnotherOverlayInterface" /s /i /y
