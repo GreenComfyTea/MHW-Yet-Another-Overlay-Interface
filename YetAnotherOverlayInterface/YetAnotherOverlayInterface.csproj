@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpPluginLoader.Core" Version="0.0.7" />
+    <PackageReference Include="SharpPluginLoader.ImGui" Version="1.90.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="data\configs\" />
+    <Folder Include="data\localizations\" />
+    <Folder Include="source\Core\" />
+    <Folder Include="source\Frontend\Overlay\Components\" />
+    <Folder Include="source\Frontend\Overlay\Widgets\" />
+    <Folder Include="source\Frontend\ImGui\" />
+    <Folder Include="source\Frontend\Overlay\" />
+    <Folder Include="source\Infrastructure\ConfigManager\Watchers\" />
+  </ItemGroup>
+
+</Project>
