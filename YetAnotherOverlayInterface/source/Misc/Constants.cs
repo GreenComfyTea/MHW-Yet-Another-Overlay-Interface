@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Text.Json;
 
 namespace YetAnotherOverlayInterface;
 
@@ -6,6 +7,7 @@ internal static class Constants
 {
 	public const string MOD_AUTHOR = "GreenComfyTea";
 	public const string MOD_NAME = "Yet Another Overlay Interface";
+	public const string MOD_NAME_ABBREVIATION = "YAOI";
 	public const string MOD_FOLDER_NAME = "YetAnotherOverlayInterface";
 
 	public const string VERSION = "2.0.0";
@@ -25,6 +27,8 @@ internal static class Constants
 
 	public const string CONFIGS_PATH = $@"{PLUGIN_DATA_PATH}configs\";
 
+	public const string DEFAULT_LOCALIZATION = "en-US";
+
 	public const float DRAG_FLOAT_SPEED = 0.1f;
 	public const float DRAG_FLOAT_MAX = 15360f;
 	public const float DRAG_FLOAT_MIN = -DRAG_FLOAT_MAX;
@@ -42,7 +46,16 @@ internal static class Constants
 
 	public const string EMOJI_FONT = "NotoEmoji-Bold.ttf";
 
+	public const int DUPLICATE_EVENT_TICK_THRESHOLD = 10000;
+
 	public static readonly Vector4 MOD_AUTHOR_COLOR = new(0.702f, 0.851f, 0.424f, 1f);
 	public static readonly Vector4 IMGUI_USERNAME_COLOR = new(0.5f, 0.710f, 1f, 1f);
+
+	public static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS_INSTANCE = new()
+	{
+		WriteIndented = true,
+		AllowTrailingCommas = true,
+		Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+	};
 
 }

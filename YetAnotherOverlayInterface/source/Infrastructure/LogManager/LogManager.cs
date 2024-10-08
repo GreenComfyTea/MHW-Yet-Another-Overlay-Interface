@@ -7,34 +7,26 @@ using System.Threading.Tasks;
 
 namespace YetAnotherOverlayInterface;
 
-internal class LogManager
+internal static class LogManager
 {
-	private static readonly Lazy<LogManager> _lazy = new(() => new LogManager());
 
-	public static LogManager Instance => _lazy.Value;
-
-	private LogManager()
+	public static void Info(object value)
 	{
-
+		Log.Info($"[{Constants.MOD_NAME_ABBREVIATION}] {value}");
 	}
 
-	public void Info(object value)
+	public static void Warn(object value)
 	{
-		Log.Info($"[{Constants.MOD_NAME}] {value}");
+		Log.Warn($"[{Constants.MOD_NAME_ABBREVIATION}] {value}");
 	}
 
-	public void Warn(object value)
+	public static void Error(object value)
 	{
-		Log.Warn($"[{Constants.MOD_NAME}] {value}");
+		Log.Error($"[{Constants.MOD_NAME_ABBREVIATION}] {value}");
 	}
 
-	public void Error(object value)
+	public static void Debug(object value)
 	{
-		Log.Error($"[{Constants.MOD_NAME}] {value}");
-	}
-
-	public void Debug(object value)
-	{
-		Log.Debug($"[{Constants.MOD_NAME}] {value}");
+		Log.Debug($"[{Constants.MOD_NAME_ABBREVIATION}] {value}");
 	}
 }

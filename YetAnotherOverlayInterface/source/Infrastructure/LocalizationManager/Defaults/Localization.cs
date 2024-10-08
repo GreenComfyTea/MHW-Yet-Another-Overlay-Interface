@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace YetAnotherOverlayInterface;
 
-internal class CurrentConfig
+internal class Localization
 {
-	public string ConfigName { get; set; } = Constants.CURRENT_CONFIG;
+	public string Code { get; set; }
+
+	public string Name { get; set; }
 }

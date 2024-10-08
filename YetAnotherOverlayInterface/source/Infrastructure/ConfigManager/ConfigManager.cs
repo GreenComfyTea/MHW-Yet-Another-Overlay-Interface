@@ -1,5 +1,4 @@
-﻿using SharpPluginLoader.Core.Configuration;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,267 +6,175 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace YetAnotherOverlayInterface;
+
 internal class ConfigManager
 {
 	private static readonly Lazy<ConfigManager> _lazy = new(() => new ConfigManager());
 	public static ConfigManager Instance => _lazy.Value;
-	private CurrentConfig CurrentConfigIntance { get; set; }
-	private CurrentConfigWatcher CurrentConfigWatcherInstance { get; set; }
 
-	public Dictionary<string, Config> Configs { get; set; } = [];
-	public Config ActiveConfig { get; set; }
-	public ConfigWatcher ConfigWatcherInstance { get; set; }
+	public JsonDatabase<CurrentConfig> CurrentConfigInstance { get; set; }
+
+	public JsonDatabase<Config> ActiveConfig { get; set; }
+	public Dictionary<string, JsonDatabase<Config>> Configs { get; set; } = [];
+
 
 	private ConfigManager()
 	{
-		LogManager.Instance.Info("ConfigManager: Initializing...");
-
-		// Create folder hierarchy if it doesn't exist
-		Directory.CreateDirectory(Constants.CONFIGS_PATH);
-
-
-		// Default initialization
-		CurrentConfigWatcherInstance = new();
-		ConfigWatcherInstance = new();
-
-		CurrentConfigWatcherInstance.Disable();
-		ConfigWatcherInstance.Disable();
-
-		CurrentConfigIntance = new();
-		Configs = [];
-		Config defaultConfig = new();
-		Configs.Add(Constants.DEFAULT_CONFIG, defaultConfig);
+		LogManager.Info("ConfigManager: Initializing...");
 
 		LoadAllConfigs();
-
-		// If current config file doesn't exist - create it and use default config
-		if(!File.Exists(Constants.CURRENT_CONFIG_FILE_PATH_NAME))
-		{
-			LogManager.Instance.Info($"ConfigManager: Current Config Doesn't Exist. Using Default Config.");
-
-			SetActiveConfig(defaultConfig);
-
-			LogManager.Instance.Info($"ConfigManager: Initialized!");
-			return;
-		}
-
 		LoadCurrentConfig();
+		
+		//CurrentConfig.Created += OnCurrentConfigCreated;
+		//CurrentConfig.RenamedTo += OnCurrentConfigRenamed;
+		//CurrentConfig.Deleted += OnCurrentConfigDeleted;
+		//CurrentConfig.Error += OnCurrentConfigError;
 
-		CurrentConfigWatcherInstance.Enable();
-		ConfigWatcherInstance.Enable();
-
-		LogManager.Instance.Info("ConfigManager: Initialized!");
-
+		LogManager.Info("ConfigManager: Initialized!");
 	}
 
-	public void SetActiveConfig(Config config)
+	public void ActivateConfig(JsonDatabase<Config> config)
 	{
-		LogManager.Instance.Info($"ConfigManager: Setting Active Config to \"{config.Name}\"...");
-
+		LogManager.Info($"ConfigManager: Activating config \"{config.Name}\"...");
+		
 		ActiveConfig = config;
+		CurrentConfigInstance.Data.ConfigName = config.Name;
+		CurrentConfigInstance.Save();
 
-		ConfigWatcherInstance.Disable();
-		ActiveConfig.Save();
-		ConfigWatcherInstance.Enable();
-
-		CurrentConfigIntance.currentConfig = config.Name;
-		CurrentConfigIntance.Save();
-
-		LogManager.Instance.Info($"ConfigManager: Active Config Is Set to \"{config.Name}\"!");
+		LogManager.Info($"ConfigManager: Config \"{config.Name}\" is activated!");
 	}
 
-	public void SetActiveConfig(string name)
+	public void ActivateConfig(string name)
 	{
-		LogManager.Instance.Info($"ConfigManager: Searching for Config \"${name}\"...");
+		LogManager.Info($"ConfigManager: Searching for config \"{name}\" to activate it...");
 
-		Config config;
-		bool configExists = Configs.TryGetValue(name, out config);
+		bool isGetConfigSuccess = Configs.TryGetValue(name, out JsonDatabase<Config> config);
 
-		if(!configExists)
+		if(!isGetConfigSuccess)
 		{
-			LogManager.Instance.Info($"ConfigManager: Config \"${name}\" Not Found!");
+			LogManager.Info($"ConfigManager: Config \"{name}\" is not found. ...");
+			LogManager.Info($"ConfigManager: Searching for default config to activate it...");
+
+			bool isGetDefaultConfigSuccess = Configs.TryGetValue(Constants.DEFAULT_CONFIG, out JsonDatabase<Config> defaultConfig);
+
+			if(!isGetDefaultConfigSuccess)
+			{
+				LogManager.Info($"ConfigManager: Default config is not found. Creating it...");
+
+				defaultConfig = new(Constants.CONFIGS_PATH, Constants.DEFAULT_CONFIG);
+				defaultConfig.Data.Name = Constants.DEFAULT_CONFIG;
+				defaultConfig.Save();
+				Configs[Constants.DEFAULT_CONFIG] = defaultConfig;
+
+				LogManager.Info($"ConfigManager: Default config is created!");
+
+				ActivateConfig(defaultConfig);
+				return;
+			}
+
+			LogManager.Info($"ConfigManager: Default config is found!");
+
+			ActivateConfig(defaultConfig);
 			return;
 		}
 
-		LogManager.Instance.Info($"ConfigManager: Config \"${name}\" Found!");
-		SetActiveConfig(config);
+		LogManager.Info($"ConfigManager: Config \"{name}\" is found!");
+
+		ActivateConfig(config);
 	}
 
-	public void SaveCurrentConfig()
+	private void LoadCurrentConfig()
 	{
-		LogManager.Instance.Info("ConfigManager: Saving Current Config...");
+		LogManager.Info("ConfigManager: Loading current config...");
 
-		CurrentConfigIntance.Save();
+		CurrentConfigInstance = new(Constants.PLUGIN_DATA_PATH, Constants.CURRENT_CONFIG);
+		CurrentConfigInstance.Changed += OnCurrentConfigChanged;
+		CurrentConfigInstance.Created += OnCurrentConfigCreated;
+		CurrentConfigInstance.RenamedFrom += OnCurrentConfigRenamedFrom;
+		CurrentConfigInstance.RenamedTo += OnCurrentConfigRenamedTo;
+		CurrentConfigInstance.Deleted += OnCurrentConfigDeleted;
+		CurrentConfigInstance.Error += OnCurrentConfigError;
 
-		LogManager.Instance.Info("ConfigManager: Current Config Saved!");
+		LogManager.Info("ConfigManager: Current config loaded!");
 	}
 
-	public void LoadCurrentConfig()
-	{
-		LogManager.Instance.Info("ConfigManager: Loading Current Config...");
-
-		CurrentConfig newCurrentConfig = CurrentConfig.Load();
-
-		if(newCurrentConfig == null)
-		{
-			LogManager.Instance.Info("ConfigManager: Loading Current Config Failed!");
-			CurrentConfigIntance.Save();
-			return;
-		}
-
-		Config config;
-		bool configExists = Configs.TryGetValue(newCurrentConfig.currentConfig, out config);
-
-		if(!configExists)
-		{
-			LogManager.Instance.Info("ConfigManager: Loading Current Config Failed!");
-			CurrentConfigIntance.Save();
-			return;
-		}
-
-		SetActiveConfig(config);
-
-		LogManager.Instance.Info("ConfigManager: Current Config Loaded!");
-	}
-
-	public void LoadAllConfigs()
+	private void LoadAllConfigs()
 	{
 		try
 		{
-			LogManager.Instance.Info("ConfigManager: Loading All Configs...");
+			LogManager.Info("ConfigManager: Loading all configs...");
 
-			string[] allConfigFileNamePaths = Directory.GetFiles(Constants.CONFIGS_PATH);
+			Directory.CreateDirectory(Path.GetDirectoryName(Constants.CONFIGS_PATH));
 
-			foreach(var configFileNamePath in allConfigFileNamePaths)
+			string[] allConfigFilePathNames = Directory.GetFiles(Constants.CONFIGS_PATH);
+
+			if(allConfigFilePathNames.Length == 0)
 			{
-				string configFileName = Path.GetFileNameWithoutExtension(configFileNamePath);
-
-				Config newConfig = Config.Load(Path.GetFileName(configFileName));
-
-				if(newConfig == null)
-				{
-					LogManager.Instance.Info($"ConfigManager: Loading Config {configFileName} Failed!");
-					continue;
-				}
-
-				Configs[newConfig.Name] = newConfig;
-			}
-
-			LogManager.Instance.Info("ConfigManager: All Configs Loaded!");
-		}
-		catch(Exception e)
-		{
-			LogManager.Instance.Info($"ConfigManager: Loading All Configs Failed! Error: {e.Message}");
-			return;
-		}
-	}
-
-	public void LoadConfig(string name)
-	{
-		LogManager.Instance.Info($"ConfigManager: Loading Config \"{name}\"...");
-
-		Config newConfig = Config.Load(name);
-
-		if(newConfig == null)
-		{
-			LogManager.Instance.Info($"ConfigManager: Loading Config \"{name}\" Failed!");
-
-			Config oldConfig;
-			bool oldConfigExists = Configs.TryGetValue(name, out oldConfig);
-
-			if(oldConfigExists) oldConfig.Save();
-			return;
-		}
-
-		Configs[name] = newConfig;
-		if(ActiveConfig.Name == name) SetActiveConfig(newConfig);
-
-		LogManager.Instance.Info($"ConfigManager: Config \"{name}\" Loaded!");
-	}
-
-	public void SaveConfig(Config config)
-	{ 
-		LogManager.Instance.Info($"ConfigManager: Saving Config \"{config.Name}\"...");
-
-		ConfigWatcherInstance.Disable();
-		config.Save();
-		ConfigWatcherInstance.Enable();
-
-		LogManager.Instance.Info($"ConfigManager: Config \"{config.Name}\" Saved!");
-	
-	}
-
-	public void SaveConfig(string name)
-	{
-		LogManager.Instance.Info($"ConfigManager: Searching for Config \"{name}\"...");
-
-		Config config;
-		bool configExists = Configs.TryGetValue(name, out config);
-
-		if(!configExists)
-		{
-			LogManager.Instance.Info($"ConfigManager: Config \"{name}\" Not Found!");
-			return;
-		}
-
-		LogManager.Instance.Info($"ConfigManager: Config \"{name}\" Foind!");
-
-		SaveConfig(config);
-	}
-
-	public void RemoveConfig(Config config)
-	{
-		LogManager.Instance.Info($"ConfigManager: Removing Config \"{config.Name}\"...");
-
-		try
-		{
-			Configs.Remove(config.Name);
-			string configFileNamePath = $"{Constants.CONFIGS_PATH}\\{config.Name}.json";
-			if(File.Exists(configFileNamePath))
-			{
-				ConfigWatcherInstance.Disable();
-				File.Delete(configFileNamePath);
-				ConfigWatcherInstance.Enable();
-			}
-
-			LogManager.Instance.Info($"ConfigManager: \"{config.Name}\" Removed!");
-
-			if(ActiveConfig.Name != config.Name) return;
-
-			if(Configs.Count == 0)
-			{
-				Config defaultConfig = new();
-				Configs.Add(Constants.DEFAULT_CONFIG, defaultConfig);
-				SetActiveConfig(defaultConfig);
+				JsonDatabase<Config> defaultConfig = new(Constants.CONFIGS_PATH, Constants.DEFAULT_CONFIG);
+				defaultConfig.Data.Name = Constants.DEFAULT_CONFIG;
+				defaultConfig.Save();
+				Configs[Constants.DEFAULT_CONFIG] = defaultConfig;
 
 				return;
 			}
 
-			Config newActiveConfig = Configs.First().Value;
-			SetActiveConfig(newActiveConfig);
+			foreach(var configFilePathName in allConfigFilePathNames)
+			{
+				string name = Path.GetFileNameWithoutExtension(configFilePathName);
+
+				LogManager.Info($"ConfigManager: Loading config \"{name}\"...");
+
+				JsonDatabase<Config> newConfig = new(Constants.CONFIGS_PATH, name);
+				newConfig.Data.Name = name;
+				newConfig.Save();
+				Configs[name] = newConfig;
+
+				LogManager.Info($"ConfigManager: Config \"{name}\" is loaded!");
+			}
+
+			LogManager.Info("ConfigManager: Loading all configs is done!");
 		}
-		catch(Exception e)
+		catch(Exception exception)
 		{
-			LogManager.Instance.Info($"ConfigManager: Removing Config \"{config.Name}\" Failed! Error: {e.Message}");
-			return;
+			LogManager.Error(exception.Message);
 		}
-		
 	}
 
-	public void RemoveConfig(string name)
+	private void OnCurrentConfigChanged(object sender, EventArgs eventArgs)
 	{
-		LogManager.Instance.Info($"ConfigManager: Searching for Config \"{name}\"...");
+		LogManager.Info("ConfigManager: Current config file changed...");
+		ActivateConfig(CurrentConfigInstance.Data.ConfigName);
+	}
 
-		Config config;
-		bool configExists = Configs.TryGetValue(name, out config);
+	private void OnCurrentConfigCreated(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Current config file created...");
+		CurrentConfigInstance.Load();
+		ActivateConfig(CurrentConfigInstance.Data.ConfigName);
+	}
 
-		if(!configExists)
-		{
-			LogManager.Instance.Info($"ConfigManager: Config \"{name}\" Not Found!");
-			return;
-		}
+	private void OnCurrentConfigRenamedFrom(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Current config file renamed from...");
+		CurrentConfigInstance.Save();
+	}
 
-		LogManager.Instance.Info($"ConfigManager: Config \"{name}\" Foind!");
-		RemoveConfig(config);
+	private void OnCurrentConfigRenamedTo(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Current config file renamed to...");
+		CurrentConfigInstance.Load();
+		ActivateConfig(CurrentConfigInstance.Data.ConfigName);
+	}
+
+	private void OnCurrentConfigDeleted(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Current config file deleted...");
+		CurrentConfigInstance.Save();
+	}
+
+	private void OnCurrentConfigError(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Current config file error...");
+		CurrentConfigInstance.Save();
 	}
 }

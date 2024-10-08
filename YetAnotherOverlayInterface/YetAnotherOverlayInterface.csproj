@@ -19,6 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="JsonFlatFileDataStore" Version="2.4.2" />
     <PackageReference Include="SharpPluginLoader.Core" Version="0.0.7" />
     <PackageReference Include="SharpPluginLoader.ImGui" Version="1.90.2.3" />
   </ItemGroup>
@@ -32,6 +33,12 @@
     <Folder Include="source\Frontend\Overlay\Widgets\" />
     <Folder Include="source\Frontend\ImGui\" />
     <Folder Include="source\Frontend\Overlay\" />
+    <Folder Include="source\Infrastructure\ConfigManager\Watchers\" />
+    <Folder Include="source\Infrastructure\LocalizationManager\Watchers\" />
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy &quot;$(OutDir)&quot; &quot;D:\Programs\Steam\steamapps\common\Monster Hunter World\nativePC\plugins\CSharp\YetAnotherOverlayInterface&quot; /s /i /y" />
+  </Target>
 
 </Project>
