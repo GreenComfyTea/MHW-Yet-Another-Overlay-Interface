@@ -34,8 +34,4 @@
     <Folder Include="source\Frontend\Overlay\" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy &quot;$(OutDir)&quot; &quot;D:\Programs\Steam\steamapps\common\Monster Hunter World\nativePC\plugins\CSharp\YetAnotherOverlayInterface&quot; /s /i /y" />
-  </Target>
-
 </Project>
