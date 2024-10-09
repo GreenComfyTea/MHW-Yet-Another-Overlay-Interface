@@ -1,19 +1,17 @@
-﻿using ABI.System;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace YetAnotherOverlayInterface;
 
-internal class JsonWatcher<T>
+internal class JsonWatcher<T> : IDisposable where T : new()
 {
 	private JsonDatabase<T> JsonDatabaseInstance { get; }
 
 	private FileSystemWatcher Watcher { get; }
-
-	private string FilePathName { get; } = Constants.PLUGIN_DATA_PATH;
 
 	private bool IsDisabled { get; set; } = false;
 
@@ -21,25 +19,35 @@ internal class JsonWatcher<T>
 
 	public JsonWatcher(JsonDatabase<T> jsonDatabase)
 	{
-		JsonDatabaseInstance = jsonDatabase;
-		Watcher = new(jsonDatabase.FilePath);
-		FilePathName = Path.Combine(jsonDatabase.FilePath, $"{jsonDatabase.Name}.json");
+		try
+		{
+			LogManager.Info($"ConfigWatcher \"{jsonDatabase.Name}\": Initializing...");
 
-		Watcher.NotifyFilter = NotifyFilters.Attributes
-							 | NotifyFilters.CreationTime
-							 | NotifyFilters.FileName
-							 | NotifyFilters.LastWrite
-							 | NotifyFilters.Security
-							 | NotifyFilters.Size;
+			JsonDatabaseInstance = jsonDatabase;
+			Watcher = new(jsonDatabase.FilePath);
 
-		Watcher.Changed += OnJsonFileChanged;
-		Watcher.Created += OnJsonFileCreated;
-		Watcher.Renamed += OnJsonFileRenamed;
-		Watcher.Deleted += OnJsonFileDeleted;
-		Watcher.Error += OnJsonFileError;
+			Watcher.NotifyFilter = NotifyFilters.Attributes
+								 | NotifyFilters.CreationTime
+								 | NotifyFilters.FileName
+								 | NotifyFilters.LastWrite
+								 | NotifyFilters.Security
+								 | NotifyFilters.Size;
 
-		Watcher.Filter = $"{jsonDatabase.Name}.json";
-		Watcher.EnableRaisingEvents = true;
+			Watcher.Changed += OnJsonFileChanged;
+			Watcher.Created += OnJsonFileCreated;
+			Watcher.Renamed += OnJsonFileRenamed;
+			Watcher.Deleted += OnJsonFileDeleted;
+			Watcher.Error += OnJsonFileError;
+
+			Watcher.Filter = $"{jsonDatabase.Name}.json";
+			Watcher.EnableRaisingEvents = true;
+
+			LogManager.Info($"ConfigWatcher \"{jsonDatabase.Name}\": Initialized!");
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception.Message);
+		}
 	}
 
 	public void Enable()
@@ -47,57 +55,105 @@ internal class JsonWatcher<T>
 		IsDisabled = false;
 	}
 
+	public void DelayedEnable()
+	{
+		Timers.SetTimeout(Enable, Constants.REENABLE_WATCHER_DELAY_MILLISECONDS);
+	}
+
 	public void Disable()
 	{
 		IsDisabled = true;
 	}
 
+	public void Dispose()
+	{
+		LogManager.Info($"ConfigWatcher \"{JsonDatabaseInstance.Name}\": Disposing...");
+		Watcher.Dispose();
+		LogManager.Info($"ConfigWatcher \"{JsonDatabaseInstance.Name}\": Disposed!");
+	}
+
 	private void OnJsonFileChanged(object sender, FileSystemEventArgs e)
 	{
-		if(IsDisabled) return;
+		try
+		{
+			if(IsDisabled) return;
 
-		DateTime eventTime = File.GetLastWriteTime(FilePathName);
-		if(LastEventTime.Ticks - eventTime.Ticks < Constants.DUPLICATE_EVENT_TICK_THRESHOLD) return;
+			DateTime eventTime = File.GetLastWriteTime(e.FullPath);
+			if(LastEventTime.Ticks - eventTime.Ticks < Constants.DUPLICATE_EVENT_THRESHOLD_TICKS) return;
 
-		LogManager.Debug($"File \"{JsonDatabaseInstance.Name}\" changed.");
+			LogManager.Debug($"File \"{JsonDatabaseInstance.Name}\": Changed.");
 
-		JsonDatabaseInstance.Load();
-		JsonDatabaseInstance.OnChanged();
+			JsonDatabaseInstance.Load();
+			JsonDatabaseInstance.OnChanged();
 
-		LastEventTime = eventTime;
+			LastEventTime = eventTime;
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception.Message);
+		}
 	}
 
 	private void OnJsonFileCreated(object sender, FileSystemEventArgs e)
 	{
-		if(IsDisabled) return;
-		LogManager.Debug($"File \"{JsonDatabaseInstance.Name}\" created.");
+		try
+		{
+			if(IsDisabled) return;
+			LogManager.Debug($"File \"{JsonDatabaseInstance.Name}\": Created.");
 
-		JsonDatabaseInstance.Load();
-		JsonDatabaseInstance.OnCreated();
+			JsonDatabaseInstance.Load();
+			JsonDatabaseInstance.OnCreated();
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception.Message);
+		}
 	}
 
 	private void OnJsonFileDeleted(object sender, FileSystemEventArgs e)
 	{
-		if(IsDisabled) return;
-		LogManager.Debug($"File \"{JsonDatabaseInstance.Name}\" deleted.");
+		try
+		{
+			if(IsDisabled) return;
+			LogManager.Debug($"File \"{JsonDatabaseInstance.Name}\": Deleted.");
 
-		JsonDatabaseInstance.OnDeleted();
+			JsonDatabaseInstance.OnDeleted();
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception.Message);
+		}
 	}
 
 	private void OnJsonFileRenamed(object sender, RenamedEventArgs e)
 	{
-		if(IsDisabled) return;
-		LogManager.Debug($"File \"{e.OldName}\" Renamed to \"{e.Name}\".");
+		try
+		{
+			if(IsDisabled) return;
+			LogManager.Debug($"File \"{e.OldName}\": Renamed to \"{e.Name}\".");
 
-		if(e.Name != Watcher.Filter) JsonDatabaseInstance.OnRenamedFrom();
-		else JsonDatabaseInstance.OnRenamedTo();
+			if(e.Name != Watcher.Filter) JsonDatabaseInstance.OnRenamedFrom();
+			else JsonDatabaseInstance.OnRenamedTo();
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception.Message);
+		}
 	}
 
 	private void OnJsonFileError(object sender, ErrorEventArgs e)
 	{
-		if(IsDisabled) return;
-		LogManager.Debug($"File \"{JsonDatabaseInstance.Name}\" error.");
+		try
+		{
+			if(IsDisabled) return;
+			LogManager.Debug($"File \"{JsonDatabaseInstance.Name}\": Unknown error.");
 
-		JsonDatabaseInstance.Load();
+			JsonDatabaseInstance.Load();
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception.Message);
+		}
+		
 	}
 }

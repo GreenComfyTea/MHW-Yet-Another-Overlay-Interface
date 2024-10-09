@@ -44,9 +44,19 @@ internal static class Constants
 	public const string PAYPAL_LINK = "https://paypal.me/greencomfytea";
 	public const string KOFI_LINK = "https://ko-fi.com/greencomfytea";
 
+	public const string EMPTY_JSON = "{}";
+
 	public const string EMOJI_FONT = "NotoEmoji-Bold.ttf";
 
-	public const int DUPLICATE_EVENT_TICK_THRESHOLD = 10000;
+	public const int REENABLE_WATCHER_DELAY_MILLISECONDS = 50;
+	public const int DUPLICATE_EVENT_THRESHOLD_TICKS = 10000;
+
+	public const float EPSILON = 0.000001f;
+
+	public const float COMBOBOX_WIDTH_MULTIPLIER = 0.4f;
+
+	public static readonly Vector2 DEFAULT_WINDOW_POSITION = new(480, 60);
+	public static readonly Vector2 DEFAULT_WINDOW_SIZE = new(600, 500);
 
 	public static readonly Vector4 MOD_AUTHOR_COLOR = new(0.702f, 0.851f, 0.424f, 1f);
 	public static readonly Vector4 IMGUI_USERNAME_COLOR = new(0.5f, 0.710f, 1f, 1f);

@@ -25,12 +25,10 @@ internal class FileSync
 
 	public string Read()
 	{
-		string json = "{}";
-
 		if(File.Exists(PathFileName)) return ReadFromFile();
 			
-		WriteToFile("{}");
-		return json;
+		WriteToFile(Constants.EMPTY_JSON);
+		return Constants.EMPTY_JSON;
 	}
 
 	public bool Write(string json)
@@ -76,7 +74,7 @@ internal class FileSync
 		catch(Exception exception)
 		{
 			LogManager.Error(exception.Message);
-			return "{}";
+			return Constants.EMPTY_JSON;
 		}
 		
 	}

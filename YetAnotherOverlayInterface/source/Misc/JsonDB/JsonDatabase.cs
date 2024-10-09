@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace YetAnotherOverlayInterface;
 
-internal class JsonDatabase<T>
+internal class JsonDatabase<T> : IDisposable where T : new()
 {
 	public string Name { get; set; } = "";
 	public string FilePath { get; set; } = Constants.PLUGIN_DATA_PATH;
@@ -76,12 +76,14 @@ internal class JsonDatabase<T>
 			Data = JsonSerializer.Deserialize<T>(json, Constants.JSON_SERIALIZER_OPTIONS_INSTANCE);
 
 			LogManager.Info($"File \"{Name}.json\": Loaded!");
-			Timers.SetTimeout(() => JsonWatcherInstance.Enable(), 50);
+			JsonWatcherInstance?.DelayedEnable();
 			return Data;
 		}
 		catch(Exception exception)
 		{
 			LogManager.Error(exception.Message);
+			Data = new T();
+			Save();
 			return Data;
 		}
 	}
@@ -91,7 +93,7 @@ internal class JsonDatabase<T>
 		try
 		{
 			LogManager.Info($"File \"{Name}.json\": Saving...");
-			JsonWatcherInstance.Disable();
+			JsonWatcherInstance?.Disable();
 
 			var json = JsonSerializer.Serialize(Data, Constants.JSON_SERIALIZER_OPTIONS_INSTANCE);
 
@@ -102,7 +104,7 @@ internal class JsonDatabase<T>
 			if(isSuccess) LogManager.Info($"File \"{Name}.json\": Saved!");
 			else LogManager.Info($"File \"{Name}.json\": Saving failed!");
 
-			Timers.SetTimeout(() => JsonWatcherInstance.Enable(), 50);
+			JsonWatcherInstance?.DelayedEnable();
 			return isSuccess;
 		}
 		catch(Exception exception)
@@ -139,6 +141,13 @@ internal class JsonDatabase<T>
 		EmitEvents(Deleted);
 	}
 
+	public void Dispose()
+	{
+		LogManager.Info($"File \"{Name}.json\": Disposing...");
+		JsonWatcherInstance?.Dispose();
+		LogManager.Info($"File \"{Name}.json\": Disposed!");
+	}
+
 	private void EmitEvents(EventHandler eventHandler)
 	{
 		foreach(Delegate subscriber in eventHandler.GetInvocationList())
@@ -147,7 +156,6 @@ internal class JsonDatabase<T>
 			{
 				subscriber.DynamicInvoke(this, EventArgs.Empty);
 			}
-
 			catch(Exception exception)
 			{
 				LogManager.Error(exception.Message);

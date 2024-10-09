@@ -7,28 +7,29 @@ using System.Xml.Linq;
 
 namespace YetAnotherOverlayInterface;
 
-internal class ConfigManager
+internal class ConfigManager : IDisposable
 {
 	private static readonly Lazy<ConfigManager> _lazy = new(() => new ConfigManager());
 	public static ConfigManager Instance => _lazy.Value;
 
-	public JsonDatabase<CurrentConfig> CurrentConfigInstance { get; set; }
+
 
 	public JsonDatabase<Config> ActiveConfig { get; set; }
 	public Dictionary<string, JsonDatabase<Config>> Configs { get; set; } = [];
+
+	private JsonDatabase<CurrentConfig> CurrentConfigInstance { get; set; }
+
+	private ConfigWatcher ConfigWatcherInstance { get; }
 
 
 	private ConfigManager()
 	{
 		LogManager.Info("ConfigManager: Initializing...");
 
+		ConfigWatcherInstance = new();
+
 		LoadAllConfigs();
 		LoadCurrentConfig();
-		
-		//CurrentConfig.Created += OnCurrentConfigCreated;
-		//CurrentConfig.RenamedTo += OnCurrentConfigRenamed;
-		//CurrentConfig.Deleted += OnCurrentConfigDeleted;
-		//CurrentConfig.Error += OnCurrentConfigError;
 
 		LogManager.Info("ConfigManager: Initialized!");
 	}
@@ -83,17 +84,75 @@ internal class ConfigManager
 		ActivateConfig(config);
 	}
 
+	public void LoadConfig(string name)
+	{
+		LogManager.Info($"ConfigManager: Loading config \"{name}\"...");
+
+		JsonDatabase<Config> config = new(Constants.CONFIGS_PATH, name);
+		config.Data.Name = name;
+		config.Save();
+
+		config.Changed += OnConfigFileChanged;
+		config.Created += OnConfigFileCreated;
+		config.RenamedFrom += OnConfigFileRenamedFrom;
+		config.RenamedTo += OnConfigFileRenamedTo;
+		config.Deleted += OnConfigFileDeleted;
+		config.Error += OnConfigFileError;
+
+		Configs[Constants.DEFAULT_CONFIG] = config;
+
+		LogManager.Info($"ConfigManager: Config \"{name}\" is loaded!");
+	}
+
+	public void Dispose()
+	{
+		LogManager.Info("ConfigManager: Disposing...");
+
+		ConfigWatcherInstance.Dispose();
+		CurrentConfigInstance.Dispose();
+
+		foreach(var config in Configs)
+		{
+			config.Value.Dispose();
+		}
+
+		LogManager.Info("ConfigManager: Disposed!");
+	}
+
+	private void InitializeDefaultConfig()
+	{
+		LogManager.Info("ConfigManager: Initializing default config...");
+
+		JsonDatabase<Config> config = new(Constants.CONFIGS_PATH, Constants.DEFAULT_CONFIG);
+		config.Data.Name = Constants.DEFAULT_CONFIG;
+		config.Save();
+
+		config.Changed += OnConfigFileChanged;
+		config.Created += OnConfigFileCreated;
+		config.RenamedFrom += OnConfigFileRenamedFrom;
+		config.RenamedTo += OnConfigFileRenamedTo;
+		config.Deleted += OnConfigFileDeleted;
+		config.Error += OnConfigFileError;
+
+		Configs[Constants.DEFAULT_CONFIG] = config;
+
+		LogManager.Info("ConfigManager: Default config is initialized!");
+	}
+
 	private void LoadCurrentConfig()
 	{
 		LogManager.Info("ConfigManager: Loading current config...");
 
 		CurrentConfigInstance = new(Constants.PLUGIN_DATA_PATH, Constants.CURRENT_CONFIG);
+
 		CurrentConfigInstance.Changed += OnCurrentConfigChanged;
 		CurrentConfigInstance.Created += OnCurrentConfigCreated;
 		CurrentConfigInstance.RenamedFrom += OnCurrentConfigRenamedFrom;
 		CurrentConfigInstance.RenamedTo += OnCurrentConfigRenamedTo;
 		CurrentConfigInstance.Deleted += OnCurrentConfigDeleted;
 		CurrentConfigInstance.Error += OnCurrentConfigError;
+
+		ActivateConfig(CurrentConfigInstance.Data.ConfigName);
 
 		LogManager.Info("ConfigManager: Current config loaded!");
 	}
@@ -110,26 +169,14 @@ internal class ConfigManager
 
 			if(allConfigFilePathNames.Length == 0)
 			{
-				JsonDatabase<Config> defaultConfig = new(Constants.CONFIGS_PATH, Constants.DEFAULT_CONFIG);
-				defaultConfig.Data.Name = Constants.DEFAULT_CONFIG;
-				defaultConfig.Save();
-				Configs[Constants.DEFAULT_CONFIG] = defaultConfig;
-
+				InitializeDefaultConfig();
 				return;
 			}
 
 			foreach(var configFilePathName in allConfigFilePathNames)
 			{
 				string name = Path.GetFileNameWithoutExtension(configFilePathName);
-
-				LogManager.Info($"ConfigManager: Loading config \"{name}\"...");
-
-				JsonDatabase<Config> newConfig = new(Constants.CONFIGS_PATH, name);
-				newConfig.Data.Name = name;
-				newConfig.Save();
-				Configs[name] = newConfig;
-
-				LogManager.Info($"ConfigManager: Config \"{name}\" is loaded!");
+				LoadConfig(name);
 			}
 
 			LogManager.Info("ConfigManager: Loading all configs is done!");
@@ -142,39 +189,69 @@ internal class ConfigManager
 
 	private void OnCurrentConfigChanged(object sender, EventArgs eventArgs)
 	{
-		LogManager.Info("ConfigManager: Current config file changed...");
+		LogManager.Info("ConfigManager: Current config file changed.");
 		ActivateConfig(CurrentConfigInstance.Data.ConfigName);
 	}
 
 	private void OnCurrentConfigCreated(object sender, EventArgs eventArgs)
 	{
-		LogManager.Info("ConfigManager: Current config file created...");
+		LogManager.Info("ConfigManager: Current config file created.");
 		CurrentConfigInstance.Load();
 		ActivateConfig(CurrentConfigInstance.Data.ConfigName);
 	}
 
 	private void OnCurrentConfigRenamedFrom(object sender, EventArgs eventArgs)
 	{
-		LogManager.Info("ConfigManager: Current config file renamed from...");
+		LogManager.Info("ConfigManager: Current config file renamed from.");
 		CurrentConfigInstance.Save();
 	}
 
 	private void OnCurrentConfigRenamedTo(object sender, EventArgs eventArgs)
 	{
-		LogManager.Info("ConfigManager: Current config file renamed to...");
+		LogManager.Info("ConfigManager: Current config file renamed to.");
 		CurrentConfigInstance.Load();
 		ActivateConfig(CurrentConfigInstance.Data.ConfigName);
 	}
 
 	private void OnCurrentConfigDeleted(object sender, EventArgs eventArgs)
 	{
-		LogManager.Info("ConfigManager: Current config file deleted...");
+		LogManager.Info("ConfigManager: Current config file deleted.");
 		CurrentConfigInstance.Save();
 	}
 
 	private void OnCurrentConfigError(object sender, EventArgs eventArgs)
 	{
-		LogManager.Info("ConfigManager: Current config file error...");
+		LogManager.Info("ConfigManager: Current config file throw an error.");
 		CurrentConfigInstance.Save();
+	}
+
+	private void OnConfigFileChanged(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Config file changed.");
+	}
+
+	private void OnConfigFileCreated(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Config file created.");
+	}
+
+	private void OnConfigFileRenamedFrom(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Config file renamed from.");
+	}
+
+	private void OnConfigFileRenamedTo(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Config file renamed to.");
+	}
+
+	private void OnConfigFileDeleted(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Config file deleted.");
+	}
+
+	private void OnConfigFileError(object sender, EventArgs eventArgs)
+	{
+		LogManager.Info("ConfigManager: Config file throw an error.");
 	}
 }

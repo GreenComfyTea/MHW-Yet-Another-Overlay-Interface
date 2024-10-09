@@ -31,10 +31,7 @@
     <Folder Include="source\Core\" />
     <Folder Include="source\Frontend\Overlay\Components\" />
     <Folder Include="source\Frontend\Overlay\Widgets\" />
-    <Folder Include="source\Frontend\ImGui\" />
     <Folder Include="source\Frontend\Overlay\" />
-    <Folder Include="source\Infrastructure\ConfigManager\Watchers\" />
-    <Folder Include="source\Infrastructure\LocalizationManager\Watchers\" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
