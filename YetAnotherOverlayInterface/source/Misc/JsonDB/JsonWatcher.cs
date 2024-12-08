@@ -7,7 +7,7 @@ using System.Xml.Linq;
 
 namespace YetAnotherOverlayInterface;
 
-internal class JsonWatcher<T> : IDisposable where T : new()
+internal class JsonWatcher<T> : IDisposable where T : class, new()
 {
 	private JsonDatabase<T> JsonDatabaseInstance { get; }
 
@@ -46,7 +46,7 @@ internal class JsonWatcher<T> : IDisposable where T : new()
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -90,7 +90,7 @@ internal class JsonWatcher<T> : IDisposable where T : new()
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -106,7 +106,7 @@ internal class JsonWatcher<T> : IDisposable where T : new()
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -121,7 +121,7 @@ internal class JsonWatcher<T> : IDisposable where T : new()
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -137,7 +137,7 @@ internal class JsonWatcher<T> : IDisposable where T : new()
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -152,7 +152,7 @@ internal class JsonWatcher<T> : IDisposable where T : new()
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 		
 	}

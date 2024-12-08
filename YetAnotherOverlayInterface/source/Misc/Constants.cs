@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using SharpPluginLoader.Core;
+using System.Numerics;
 using System.Text.Json;
 
 namespace YetAnotherOverlayInterface;
@@ -54,6 +55,8 @@ internal static class Constants
 	public const float EPSILON = 0.000001f;
 
 	public const float COMBOBOX_WIDTH_MULTIPLIER = 0.4f;
+
+	public const uint MAX_CONFIG_NAME_LENGTH = 64;
 
 	public static readonly Vector2 DEFAULT_WINDOW_POSITION = new(480, 60);
 	public static readonly Vector2 DEFAULT_WINDOW_SIZE = new(600, 500);

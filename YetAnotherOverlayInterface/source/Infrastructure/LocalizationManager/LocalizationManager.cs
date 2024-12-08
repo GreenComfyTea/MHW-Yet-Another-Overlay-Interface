@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Windows.ApplicationModel.Contacts;
 
 namespace YetAnotherOverlayInterface;
 
@@ -17,11 +16,13 @@ internal sealed class LocalizationManager : IDisposable
 
 	public JsonDatabase<Localization> ActiveLocalization { get; set; }
 	public JsonDatabase<Localization> DefaultLocalization { get; set; }
-	public Dictionary<string, JsonDatabase<Localization>> Localizations { get; set; } = new();
+	public Dictionary<string, JsonDatabase<Localization>> Localizations { get; set; } = [];
 
-	private LocalizationWatcher LocalizationWatcherInstance { get; }
+	private LocalizationWatcher LocalizationWatcherInstance { get; set; }
 
-	private LocalizationManager()
+	private LocalizationManager() {}
+
+	public void Initialize()
 	{
 		LogManager.Info("LocalizationManager: Initializing...");
 
@@ -50,7 +51,7 @@ internal sealed class LocalizationManager : IDisposable
 
 		if(!isGetConfigSuccess)
 		{
-			LogManager.Info($"LocalizationManager: Config \"{name}\" is not found. ...");
+			LogManager.Info($"LocalizationManager: localization \"{name}\" is not found.");
 			LogManager.Info($"LocalizationManager: Activating default localization...");
 
 			ActivateLocalization(DefaultLocalization);
@@ -62,16 +63,16 @@ internal sealed class LocalizationManager : IDisposable
 		ActivateLocalization(localization);
 	}
 
-	public void LoadLocalization(string name)
+	public void InitializeLocalization(string name)
 	{
-		LogManager.Info($"LocalizationManager: Loading localization \"{name}\"...");
+		LogManager.Info($"LocalizationManager: Initializing localization \"{name}\"...");
 
 		JsonDatabase<Localization> newLocalization = new(Constants.LOCALIZATIONS_PATH, name);
 		newLocalization.Data.IsoCode = name;
 		newLocalization.Save();
 		Localizations[name] = newLocalization;
 
-		LogManager.Info($"LocalizationManager: Localization \"{name}\" is loaded!");
+		LogManager.Info($"LocalizationManager: Localization \"{name}\" is intialized!");
 	}
 
 	public void Dispose()
@@ -95,7 +96,7 @@ internal sealed class LocalizationManager : IDisposable
 		JsonDatabase<Localization> defaultLocalization = new(Constants.LOCALIZATIONS_PATH, Constants.DEFAULT_LOCALIZATION);
 		defaultLocalization.Data = new Localization();
 		defaultLocalization.Save();
-		Localizations[Constants.DEFAULT_CONFIG] = defaultLocalization;
+		Localizations[Constants.DEFAULT_LOCALIZATION] = defaultLocalization;
 		DefaultLocalization = defaultLocalization;
 
 		LogManager.Info($"LocalizationManager: Default localization is initialized!");
@@ -118,7 +119,7 @@ internal sealed class LocalizationManager : IDisposable
 
 				if(name == Constants.DEFAULT_LOCALIZATION) continue;
 
-				LoadLocalization(name);
+				InitializeLocalization(name);
 			}
 
 			InitializeDefaultLocalization();
@@ -127,7 +128,7 @@ internal sealed class LocalizationManager : IDisposable
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 }

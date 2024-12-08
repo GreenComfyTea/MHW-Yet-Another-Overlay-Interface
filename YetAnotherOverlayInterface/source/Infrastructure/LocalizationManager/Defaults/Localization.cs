@@ -7,15 +7,13 @@ using System.Threading.Tasks;
 
 namespace YetAnotherOverlayInterface;
 
-internal interface ILocalizationSection;
-
-internal class LocalizationInfoSection : ILocalizationSection
+internal class LocalizationInfo
 {
 	public string Name { get; set; } = "English";
 	public string Translators { get; set; } = "GreenComfyTea";
 }
 
-internal class ImGuiSection : ILocalizationSection
+internal class ImGuiLocalization
 {
 	// Mod Info
 	public string ModInfo { get; set; } = "Mod Info";
@@ -31,6 +29,16 @@ internal class ImGuiSection : ILocalizationSection
 	public string Donate { get; set; } = "Donate";
 	public string PayPal { get; set; } = "PayPal";
 	public string BuyMeATea { get; set; } = "Buy Me a Tea";
+
+	public string Config { get; set; } = "Config";
+
+	public string ActiveConfig { get; set; } = "Active Config";
+	public string NewConfigName { get; set; } = "New Config Name";
+	public string New { get; set; } = "New";
+	public string Duplicate { get; set; } = "Duplicate";
+	public string Delete { get; set; } = "Delete";
+	public string Reset { get; set; } = "Reset";
+	public string Rename { get; set; } = "Rename";
 }
 
 internal class Localization
@@ -38,8 +46,8 @@ internal class Localization
 	[JsonIgnore]
 	public string IsoCode { get; set; } = Constants.DEFAULT_LOCALIZATION;
 
-	public LocalizationInfoSection LocalizationInfo { get; set; } = new();
-	public ImGuiSection ImGui { get; set; } = new();
+	public LocalizationInfo LocalizationInfo { get; set; } = new();
+	public ImGuiLocalization ImGui { get; set; } = new();
 
 
 

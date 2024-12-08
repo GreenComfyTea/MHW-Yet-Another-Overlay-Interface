@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+	<TargetFramework>net8.0-windows</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>disable</Nullable>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
@@ -19,7 +19,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="JsonFlatFileDataStore" Version="2.4.2" />
 	<PackageReference Include="SharpPluginLoader.Core" Version="0.0.7" />
 	<PackageReference Include="SharpPluginLoader.ImGui" Version="1.90.2.3" />
   </ItemGroup>
@@ -28,10 +27,15 @@
 	<Folder Include="data\configs\" />
 	<Folder Include="data\localizations\" />
 	<Folder Include="data\fonts\" />
-	<Folder Include="source\Core\" />
 	<Folder Include="source\Frontend\Overlay\Components\" />
 	<Folder Include="source\Frontend\Overlay\Widgets\" />
 	<Folder Include="source\Frontend\Overlay\" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<None Update="data\current_config.json">
+	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</None>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Debug'">

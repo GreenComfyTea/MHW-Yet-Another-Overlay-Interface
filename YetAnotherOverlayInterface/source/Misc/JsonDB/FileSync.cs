@@ -8,26 +8,17 @@ namespace YetAnotherOverlayInterface;
 
 internal class FileSync
 {
-	public string PathFileName { get; } = "";
-	public Encoding FileEncoding { get; } = Encoding.UTF8;
-
+	public string PathFileName { get; } = string.Empty;
 
 	public FileSync(string pathFileName)
 	{
 		PathFileName = pathFileName;
 	}
 
-	public FileSync(string pathFileName, Encoding fileEncoding)
-	{
-		PathFileName = pathFileName;
-		FileEncoding = fileEncoding;
-	}
-
 	public string Read()
 	{
 		if(File.Exists(PathFileName)) return ReadFromFile();
 			
-		WriteToFile(Constants.EMPTY_JSON);
 		return Constants.EMPTY_JSON;
 	}
 
@@ -36,26 +27,15 @@ internal class FileSync
 		return WriteToFile(json);
 	}
 
-	private bool WriteToFile(string json)
+	public void Delete()
 	{
-		try {
-			Directory.CreateDirectory(Path.GetDirectoryName(PathFileName));
-			var file = File.Open(PathFileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
-			
-			var streamWriter = new StreamWriter(file, FileEncoding);
-			streamWriter.AutoFlush = true;
-
-			file.SetLength(0);
-
-			streamWriter.Write(json);
-			streamWriter.Close();
-
-			return true;
+		try
+		{
+			File.Delete(PathFileName);
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
-			return false;
+			LogManager.Error(exception);
 		}
 	}
 
@@ -73,10 +53,33 @@ internal class FileSync
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 			return Constants.EMPTY_JSON;
 		}
-		
+
 	}
 
+	private bool WriteToFile(string json)
+	{
+		try
+		{
+			Directory.CreateDirectory(Path.GetDirectoryName(PathFileName));
+			var file = File.Open(PathFileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+
+			var streamWriter = new StreamWriter(file, Encoding.UTF8);
+			streamWriter.AutoFlush = true;
+
+			file.SetLength(0);
+
+			streamWriter.Write(json);
+			streamWriter.Close();
+
+			return true;
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception);
+			return false;
+		}
+	}
 }

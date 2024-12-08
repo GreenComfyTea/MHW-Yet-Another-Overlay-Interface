@@ -42,7 +42,7 @@ internal class ConfigWatcher : IDisposable
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -89,7 +89,7 @@ internal class ConfigWatcher : IDisposable
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 
 		
@@ -105,11 +105,11 @@ internal class ConfigWatcher : IDisposable
 
 			LogManager.Debug($"Config \"{name}\": Created.");
 
-			ConfigManager.Instance.LoadConfig(name);
+			ConfigManager.Instance.InitializeConfig(name);
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -124,7 +124,7 @@ internal class ConfigWatcher : IDisposable
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 		
 	}
@@ -142,7 +142,7 @@ internal class ConfigWatcher : IDisposable
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 

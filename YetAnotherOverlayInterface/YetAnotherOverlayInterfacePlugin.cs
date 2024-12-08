@@ -1,7 +1,8 @@
 ﻿using ImGuiNET;
-using JsonFlatFileDataStore;
 using SharpPluginLoader.Core;
+using SharpPluginLoader.Core.Components;
 using SharpPluginLoader.Core.Configuration;
+using SharpPluginLoader.Core.Entities;
 using SharpPluginLoader.Core.Rendering;
 
 namespace YetAnotherOverlayInterface;
@@ -36,7 +37,7 @@ public class YetAnotherOverlayInterfacePlugin: IPlugin
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -63,7 +64,7 @@ public class YetAnotherOverlayInterfacePlugin: IPlugin
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -72,15 +73,56 @@ public class YetAnotherOverlayInterfacePlugin: IPlugin
 		try
 		{
 			if(!IsInitialized) return;
-			if(!Renderer.MenuShown) return;
+			if(Renderer.MenuShown) ImGuiManager.Instance.Draw();
 
-			ImGuiManager.Instance.Draw();
+			//LogManager.Info("   ");
+			//foreach (var largeMonster in LargeMonsterManager.Instance.LargeMonsters)
+			//{
+			//	LogManager.Info($"Large Monster: {largeMonster.Key.Name}");
+			//}
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
+
+	public void OnMonsterInitialized(Monster monsterRef)
+	{
+		try
+		{
+			Task.Run(() => MonsterManager.Instance.OnMonsterInitialized(monsterRef));
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception);
+		}
+	}
+
+	public void OnMonsterDeath(Monster monsterRef)
+	{
+		try
+		{
+			Task.Run(() => MonsterManager.Instance.OnMonsterDeath(monsterRef));
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception);
+		}
+	}
+
+	public void OnMonsterDestroy(Monster monsterRef)
+	{
+		try
+		{
+			Task.Run(() => MonsterManager.Instance.OnMonsterDestroy(monsterRef));
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception);
+		}
+	}
+
 
 	private void Init() {
 		try
@@ -89,8 +131,19 @@ public class YetAnotherOverlayInterfacePlugin: IPlugin
 
 			ConfigManager configManager = ConfigManager.Instance;
 			LocalizationManager localizationManager = LocalizationManager.Instance;
-
 			ImGuiManager imGuiManager = ImGuiManager.Instance;
+
+			LargeMonsterManager largeMonsterManager = LargeMonsterManager.Instance;
+			MonsterManager monsterManager = MonsterManager.Instance;
+
+
+			configManager.Initialize();
+			localizationManager.Initialize();
+			imGuiManager.Initialize();
+
+			largeMonsterManager.Initialize();
+			monsterManager.Initialize();
+
 
 			IsInitialized = true;
 
@@ -98,7 +151,7 @@ public class YetAnotherOverlayInterfacePlugin: IPlugin
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 }

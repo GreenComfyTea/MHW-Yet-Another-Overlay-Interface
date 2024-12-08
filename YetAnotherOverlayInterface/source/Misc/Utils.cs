@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace YetAnotherOverlayInterface;
 
@@ -89,5 +91,33 @@ internal static class Utils
 
 		ImGui.GetWindowDrawList().AddRect(itemRectMin, itemRectMax, ImGui.GetColorU32(ImGuiCol.Border), _rounding, ImDrawFlags.RoundCornersAll, thickness);
 		ImGui.NewLine();
+	}
+
+	public static void EmitEvents(object sender, EventHandler eventHandler)
+	{
+		foreach(Delegate subscriber in eventHandler.GetInvocationList())
+		{
+			try
+			{
+				subscriber.DynamicInvoke(sender, EventArgs.Empty);
+			}
+			catch(Exception exception)
+			{
+				LogManager.Error(exception);
+			}
+		}
+	}
+
+	public static string Stringify<T>(T value)
+	{
+		try
+		{
+			return JsonSerializer.Serialize(value, Constants.JSON_SERIALIZER_OPTIONS_INSTANCE);
+		}
+		catch(Exception exception)
+		{
+			LogManager.Error(exception);
+			return string.Empty;
+		}
 	}
 }

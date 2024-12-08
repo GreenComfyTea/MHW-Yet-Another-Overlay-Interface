@@ -8,7 +8,7 @@ namespace YetAnotherOverlayInterface;
 
 internal class Config
 {
-	public string Name { get; set; } = "";
+	public string Name { get; set; } = Constants.DEFAULT_CONFIG;
 
 	public string Localization { get; set; } = Constants.DEFAULT_LOCALIZATION;
 }

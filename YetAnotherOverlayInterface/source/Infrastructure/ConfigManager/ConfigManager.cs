@@ -12,24 +12,28 @@ internal class ConfigManager : IDisposable
 	private static readonly Lazy<ConfigManager> _lazy = new(() => new ConfigManager());
 	public static ConfigManager Instance => _lazy.Value;
 
-
+	public ConfigCustomization Customization { get; set; }
 
 	public JsonDatabase<Config> ActiveConfig { get; set; }
 	public Dictionary<string, JsonDatabase<Config>> Configs { get; set; } = [];
 
+	public EventHandler ActiveConfigChanged { get; set; } = delegate { };
+
+	public ConfigWatcher ConfigWatcherInstance { get; set; }
+
 	private JsonDatabase<CurrentConfig> CurrentConfigInstance { get; set; }
 
-	private ConfigWatcher ConfigWatcherInstance { get; }
+	private ConfigManager() {}
 
-
-	private ConfigManager()
+	public void Initialize()
 	{
 		LogManager.Info("ConfigManager: Initializing...");
 
-		ConfigWatcherInstance = new();
-
 		LoadAllConfigs();
 		LoadCurrentConfig();
+
+		ConfigWatcherInstance = new();
+		Customization = new();
 
 		LogManager.Info("ConfigManager: Initialized!");
 	}
@@ -41,6 +45,8 @@ internal class ConfigManager : IDisposable
 		ActiveConfig = config;
 		CurrentConfigInstance.Data.ConfigName = config.Name;
 		CurrentConfigInstance.Save();
+
+		OnActiveConfigChanged();
 
 		LogManager.Info($"ConfigManager: Config \"{config.Name}\" is activated!");
 	}
@@ -55,6 +61,15 @@ internal class ConfigManager : IDisposable
 		{
 			LogManager.Info($"ConfigManager: Config \"{name}\" is not found. ...");
 			LogManager.Info($"ConfigManager: Searching for default config to activate it...");
+
+			try
+			{
+				LogManager.Info($"ConfigManager: {Utils.Stringify(Configs.Count())}");
+			}
+			catch(Exception exception)
+			{
+				LogManager.Error(exception);
+			}
 
 			bool isGetDefaultConfigSuccess = Configs.TryGetValue(Constants.DEFAULT_CONFIG, out JsonDatabase<Config> defaultConfig);
 
@@ -84,11 +99,11 @@ internal class ConfigManager : IDisposable
 		ActivateConfig(config);
 	}
 
-	public void LoadConfig(string name)
+	public JsonDatabase<Config> InitializeConfig(string name, Config configToClone = null)
 	{
-		LogManager.Info($"ConfigManager: Loading config \"{name}\"...");
+		LogManager.Info($"ConfigManager: Initializing config \"{name}\"...");
 
-		JsonDatabase<Config> config = new(Constants.CONFIGS_PATH, name);
+		JsonDatabase<Config> config = new(Constants.CONFIGS_PATH, name, configToClone);
 		config.Data.Name = name;
 		config.Save();
 
@@ -99,9 +114,16 @@ internal class ConfigManager : IDisposable
 		config.Deleted += OnConfigFileDeleted;
 		config.Error += OnConfigFileError;
 
-		Configs[Constants.DEFAULT_CONFIG] = config;
+		Configs[name] = config;
 
-		LogManager.Info($"ConfigManager: Config \"{name}\" is loaded!");
+		LogManager.Info($"ConfigManager: Config \"{name}\" is initialized!");
+
+		return config;
+	}
+
+	public void DuplicateConfig(string newConfigName)
+	{
+
 	}
 
 	public void Dispose()
@@ -117,26 +139,6 @@ internal class ConfigManager : IDisposable
 		}
 
 		LogManager.Info("ConfigManager: Disposed!");
-	}
-
-	private void InitializeDefaultConfig()
-	{
-		LogManager.Info("ConfigManager: Initializing default config...");
-
-		JsonDatabase<Config> config = new(Constants.CONFIGS_PATH, Constants.DEFAULT_CONFIG);
-		config.Data.Name = Constants.DEFAULT_CONFIG;
-		config.Save();
-
-		config.Changed += OnConfigFileChanged;
-		config.Created += OnConfigFileCreated;
-		config.RenamedFrom += OnConfigFileRenamedFrom;
-		config.RenamedTo += OnConfigFileRenamedTo;
-		config.Deleted += OnConfigFileDeleted;
-		config.Error += OnConfigFileError;
-
-		Configs[Constants.DEFAULT_CONFIG] = config;
-
-		LogManager.Info("ConfigManager: Default config is initialized!");
 	}
 
 	private void LoadCurrentConfig()
@@ -169,21 +171,21 @@ internal class ConfigManager : IDisposable
 
 			if(allConfigFilePathNames.Length == 0)
 			{
-				InitializeDefaultConfig();
+				InitializeConfig(Constants.DEFAULT_CONFIG);
 				return;
 			}
 
 			foreach(var configFilePathName in allConfigFilePathNames)
 			{
 				string name = Path.GetFileNameWithoutExtension(configFilePathName);
-				LoadConfig(name);
+				InitializeConfig(name);
 			}
 
 			LogManager.Info("ConfigManager: Loading all configs is done!");
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -253,5 +255,10 @@ internal class ConfigManager : IDisposable
 	private void OnConfigFileError(object sender, EventArgs eventArgs)
 	{
 		LogManager.Info("ConfigManager: Config file throw an error.");
+	}
+
+	private void OnActiveConfigChanged()
+	{
+		Utils.EmitEvents(this, ActiveConfigChanged);
 	}
 }

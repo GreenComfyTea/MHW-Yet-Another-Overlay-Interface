@@ -5,12 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace YetAnotherOverlayInterface;
 
-internal class JsonDatabase<T> : IDisposable where T : new()
+internal class JsonDatabase<T> : IDisposable where T : class, new()
 {
-	public string Name { get; set; } = "";
+	public string Name { get; set; } = string.Empty;
 	public string FilePath { get; set; } = Constants.PLUGIN_DATA_PATH;
 
 	public T Data { get; set; }
@@ -25,7 +26,7 @@ internal class JsonDatabase<T> : IDisposable where T : new()
 	public EventHandler Deleted { get; set; } = delegate { };
 	public EventHandler Error { get; set; } = delegate { };
 
-	public JsonDatabase(string path, string name)
+	public JsonDatabase(string path, string name, T data = null)
 	{
 		try {
 			Name = name;
@@ -33,36 +34,17 @@ internal class JsonDatabase<T> : IDisposable where T : new()
 
 			string filePathName = Path.Combine(path, $"{name}.json");
 			FileSyncInstance = new(filePathName);
-			Load();
+			Load(data);
 
 			JsonWatcherInstance = new(this);
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
-	public JsonDatabase(string path, string name, Encoding fileEncoding)
-	{
-		try
-		{
-			Name = name;
-			FilePath = path;
-
-			string filePathName = Path.Combine(path, $"{name}.json");
-			FileSyncInstance = new(filePathName, fileEncoding);
-			Load();
-
-			JsonWatcherInstance = new(this);
-		}
-		catch(Exception exception)
-		{
-			LogManager.Error(exception.Message);
-		}
-	}
-
-	public T Load()
+	public T Load(T data = null)
 	{
 		try
 		{
@@ -70,10 +52,13 @@ internal class JsonDatabase<T> : IDisposable where T : new()
 			LogManager.Info($"File \"{Name}.json\": Loading...");
 
 
-			string json = FileSyncInstance.Read();
+			string json = data == null ? FileSyncInstance.Read() : JsonSerializer.Serialize(Data, Constants.JSON_SERIALIZER_OPTIONS_INSTANCE);
 
+			LogManager.Info($"File \"{Name}.json\": {json}");
 
 			Data = JsonSerializer.Deserialize<T>(json, Constants.JSON_SERIALIZER_OPTIONS_INSTANCE);
+			FileSyncInstance.Write(json);
+
 
 			LogManager.Info($"File \"{Name}.json\": Loaded!");
 			JsonWatcherInstance?.DelayedEnable();
@@ -81,7 +66,7 @@ internal class JsonDatabase<T> : IDisposable where T : new()
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 			Data = new T();
 			Save();
 			return Data;
@@ -109,36 +94,44 @@ internal class JsonDatabase<T> : IDisposable where T : new()
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 			return false;
 		}
 	}
 
+	public void Delete()
+	{
+		LogManager.Info($"File \"{Name}.json\": Deleting...");
+		Dispose();
+		FileSyncInstance.Delete();
+		LogManager.Info($"File \"{Name}.json\": Deleted!");
+	}
+
 	public void OnChanged()
 	{
-		EmitEvents(Changed);
+		Utils.EmitEvents(this, Changed);
 	}
 
 	public void OnCreated()
 	{
-		EmitEvents(Created);
+		Utils.EmitEvents(this, Created);
 	}
 
 	public void OnRenamedFrom()
 	{
-		EmitEvents(RenamedFrom);
-		EmitEvents(Renamed);
+		Utils.EmitEvents(this, RenamedFrom);
+		Utils.EmitEvents(this, Renamed);
 	}
 
 	public void OnRenamedTo()
 	{
-		EmitEvents(RenamedTo);
-		EmitEvents(Renamed);
+		Utils.EmitEvents(this, RenamedTo);
+		Utils.EmitEvents(this, Renamed);
 	}
 
 	public void OnDeleted()
 	{
-		EmitEvents(Deleted);
+		Utils.EmitEvents(this, Deleted);
 	}
 
 	public void Dispose()
@@ -146,20 +139,5 @@ internal class JsonDatabase<T> : IDisposable where T : new()
 		LogManager.Info($"File \"{Name}.json\": Disposing...");
 		JsonWatcherInstance?.Dispose();
 		LogManager.Info($"File \"{Name}.json\": Disposed!");
-	}
-
-	private void EmitEvents(EventHandler eventHandler)
-	{
-		foreach(Delegate subscriber in eventHandler.GetInvocationList())
-		{
-			try
-			{
-				subscriber.DynamicInvoke(this, EventArgs.Empty);
-			}
-			catch(Exception exception)
-			{
-				LogManager.Error(exception.Message);
-			}
-		}
 	}
 }

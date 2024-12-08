@@ -42,7 +42,7 @@ internal class LocalizationWatcher : IDisposable
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -90,7 +90,7 @@ internal class LocalizationWatcher : IDisposable
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -104,11 +104,11 @@ internal class LocalizationWatcher : IDisposable
 
 			LogManager.Debug($"Localization \"{name}\": Created.");
 
-			LocalizationManager.Instance.LoadLocalization(name);
+			LocalizationManager.Instance.InitializeLocalization(name);
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 
@@ -124,7 +124,7 @@ internal class LocalizationWatcher : IDisposable
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 
 	}
@@ -142,7 +142,7 @@ internal class LocalizationWatcher : IDisposable
 		}
 		catch(Exception exception)
 		{
-			LogManager.Error(exception.Message);
+			LogManager.Error(exception);
 		}
 	}
 

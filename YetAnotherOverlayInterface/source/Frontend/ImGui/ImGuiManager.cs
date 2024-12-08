@@ -20,11 +20,15 @@ internal class ImGuiManager
 
 	private bool IsForceModInfoOpen { get; set; } = true;
 
-	private ImGuiManager()
+	private ImGuiManager() {}
+
+	public ImGuiManager Initialize()
 	{
 		LogManager.Info("ImGuiManager: Initializing...");
 
 		LogManager.Info("ImGuiManager: Initialized!");
+
+		return this;
 	}
 
 	public void Draw()
@@ -81,6 +85,8 @@ internal class ImGuiManager
 			ImGui.Separator();
 			ImGui.NewLine();
 			ImGui.Separator();
+
+			changed |= ConfigManager.Instance.Customization.RenderImGui();
 		}
 		catch(Exception e)
 		{
